@@ -1,0 +1,93 @@
+---
+title: "Unicef Report on usage of Basic Water Services"
+author: "Luke Conway"
+format: html
+editor: visual
+date: 7/4/2024
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+# Introduction
+*The following report is provided for Unicef for the analysis of Basic Water Services that are in use Internationaly*
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(maps)
+```
+
+```{r}
+Indicator <- read_csv("unicef_indicator_1 (1).csv")
+
+renamed_data <- Indicator %>%
+  rename(
+    Year = time_period,
+    Value = obs_value
+  )
+
+renamed_data$Value <- renamed_data$Value / 100
+```
+## 1. Ireland is a developed country.
+### 2. The progress of its development is clear to see in the Bar-Chart.
+```{r}
+ireland_data <- renamed_data %>%
+  filter(country == "Ireland") %>%
+  mutate(Year = factor(Year))
+
+ggplot(ireland_data, aes(x = Year, y = Value, fill = Year)) +
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  scale_fill_viridis_d() + 
+  labs(title = "Yearly Values for Ireland", x = "Year", y = "Value (%)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 65, hjust = 1))
+```
+# Map of the World Situation in 2020.
+```{r}
+data_2020 <- renamed_data %>%
+  filter(Year == "2020")
+
+map_world <- map_data("world")
+world_data_2020 <- merge(map_world, data_2020, by.x = "region", by.y = "country")
+
+ggplot(data = world_data_2020) +
+  aes(x = long, y = lat, group = group, fill = Value) +
+  geom_polygon() +
+  scale_fill_viridis_c(na.value = "gray", name = "Value (%)", guide = "colorbar") + 
+  labs(title = "World Map Showing Values for Each Country, 2020")
+```
+# Situation in Afghanistan
+- It is clear to see from this scatter-plot that the issue in Afghanistan is getting progressively worse.
+- This is likely due to War and the incoming of the Taliban to control the country.
+```{r}
+afghanistan_data <- renamed_data %>%
+  filter(country == "Afghanistan") %>%
+  mutate(Year = as.numeric(as.character(Year)))
+
+ggplot(afghanistan_data, aes(x = Year, y = Value)) +
+  geom_point() +  
+  geom_smooth(method = "lm", se = FALSE, color = "blue") + 
+  labs(title = "Use of Basic Drinking Water Services Over Time in Afghanistan",
+       x = "Year",
+       y = "Value (%)") +
+  theme_minimal()
+```
+
+# Comparison of the two countries.
+This report provides an analysis of the access to basic drinking water services in Ireland and Afghanistan since the turn of the Millennium. Our objective is to highlight trends and differences in the availability of these essential services between a developed and a country which has recently faced challenges such as ***War/Poverty***.
+
+```{r}
+ireland_afghanistan_data <- renamed_data %>%
+  filter(country %in% c("Ireland", "Afghanistan")) %>%
+  mutate(Year = as.numeric(as.character(Year)))
+
+ggplot(ireland_afghanistan_data, aes(x = Year, y = Value, color = country)) +
+  geom_line() +  
+  labs(title = "Use of Basic Drinking Water Services Over Time: Ireland vs Afghanistan",
+       x = "Year",
+       y = "Value (%)") +
+  theme_minimal()
+```
+
